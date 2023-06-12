@@ -12,11 +12,5 @@ export const validateWithdrawalInputs = z.object({
     }),
     currency: z.string({
         required_error: "Currency is required"
-    }),
-    referenceId: z.string({
-        required_error: "Reference is required"
-    }),
-    idempotentKey: z.string({
-        required_error: "Reference is required"
-    }),
+    })
 })

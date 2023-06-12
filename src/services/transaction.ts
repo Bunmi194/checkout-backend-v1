@@ -66,3 +66,62 @@ export const transferTransactionQuery = async (recipientId: number, senderId: nu
       return false;
   }
 }
+
+//get all transfer amounts - expenditure
+export const getAllTransferAmount = async () => {
+  return Transactions.findAll({
+    attributes: ['amount'],
+    where: {
+      typeOfTransaction: "transfer",
+      status: "completed",
+    }
+  }).then(transfers => {
+    return transfers;
+  }).catch(error => {
+    console.log("Error: ", error);
+    return;
+  })
+}
+//get all withdrawal amounts - expenditure
+export const getAllWithdrawalAmount = async () => {
+  return Transactions.findAll({
+    attributes: ['amount'],
+    where: {
+      typeOfTransaction: "withdrawal",
+      status: "completed",
+    }
+  }).then(withdrawals => {
+    return withdrawals;
+  }).catch(error => {
+    console.log("Error: ", error);
+    return;
+  })
+}
+//get all funding amounts - income
+export const getAllFundingAmount = async () => {
+  return Transactions.findAll({
+    attributes: ['amount'],
+    where: {
+      typeOfTransaction: "fund",
+      status: "completed",
+    }
+  }).then(fund => {
+    return fund;
+  }).catch(error => {
+    console.log("Error: ", error);
+    return;
+  })
+}
+//get last 3 transactions
+export const getLastThreeTransactions = async () => {
+  return Transactions.findAll({
+    order: [['createdAt', 'DESC']],
+    limit: 3,
+    include: User,
+  }).then(lastThree => {
+    return lastThree;
+  }).catch(error => {
+    console.log("Error: ", error);
+    return;
+  })
+}

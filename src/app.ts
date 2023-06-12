@@ -4,12 +4,21 @@ import userRouter from "./routes/users";
 import fundRouter from "./routes/fund";
 import transferRouter from "./routes/transfer";
 import withdrawRouter from "./routes/withdraw";
+import statisticsRouter from "./routes/statistics";
+import googleRoute from "./routes/google";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import cors from "cors";
+import session from "express-session";
 dotenv.config();
 
 const app = express();
+
+app.use(session({
+    secret: 'chat',
+    resave: false,
+    saveUninitialized: false
+}));
 app.use(cors({
     origin: "*"
 }));
@@ -35,6 +44,8 @@ app.use("/v1/users", userRouter);
 app.use("/v1/fund", fundRouter);
 app.use("/v1/transfer", transferRouter);
 app.use("/v1/withdraw", withdrawRouter);
+app.use("/v1/statistics", statisticsRouter);
+app.use("/v1/strategy", googleRoute);
 
 app.listen(port, ()=>{
     console.log(`listening on port ${port}`);

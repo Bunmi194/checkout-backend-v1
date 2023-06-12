@@ -8,6 +8,9 @@ const sequelize = new Sequelize("checkout", "bunmi194", "bunmi194", {
 
 //for each transaction, you need the user's id, amount, type of transaction, recipientId if any, status, 
 class Transactions extends Model {
+  static find(arg0: { attributes: string[]; where: { typeOfTransaction: string; }; }) {
+    throw new Error("Method not implemented.");
+  }
   declare userId: number;
   declare typeOfTransaction: string;
   declare amount: number;
@@ -92,5 +95,6 @@ Transactions.init(
     sequelize, // passing the `sequelize` instance is required
   }
 );
-
+// User.hasMany(Transactions);
+Transactions.belongsTo(User, { foreignKey: "recipientId", foreignKeyConstraint: true});
 export default Transactions;

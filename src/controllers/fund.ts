@@ -45,7 +45,7 @@ interface TransactionData extends Optional<any, string>, SaveOptions<any>{
     
   }
 export const fundWallet = async (req: Request, res: Response) => {
-    // try {
+    try {
       //validate input
     const error = validateFundWalletDetails.safeParse(req.body);
     if(error.success === false) {
@@ -56,7 +56,8 @@ export const fundWallet = async (req: Request, res: Response) => {
     }
     //validate token
     const { authorization: rawToken  } = req.headers;
-    let { gateway, amount, currency, typeOfTransaction, phoneNumber, booking } = req.body;
+    console.log("auth: ", req.headers.authorization);
+    let { gateway, amount, currency, typeOfTransaction, phoneNumber, booking, redirect_url } = req.body;
     amount = Number(amount);
     const token = rawToken?.split(" ")[1];
     if(!token || typeof token !== 'string'){
@@ -65,7 +66,9 @@ export const fundWallet = async (req: Request, res: Response) => {
         message: "Bad request"
       })
     }
+    console.log("token: ", token);
     const fundDetails = jwt.verify(token, JWT_SECRET!) as newJwtPayload;
+    console.log("fundDetails: ", fundDetails);
     if(!fundDetails || !fundDetails.id){
       return res.status(401).json({
         status: false,
@@ -97,7 +100,7 @@ export const fundWallet = async (req: Request, res: Response) => {
       Booking: booking,
       amount,
       currency: currency.toUpperCase(),
-      redirect_url: "http://localhost:3000",
+      redirect_url,
       payment_options: "card",
       customer: {
         email: fundDetails.email,
@@ -105,6 +108,7 @@ export const fundWallet = async (req: Request, res: Response) => {
         name: `${user._previousDataValues.firstName} ${user._previousDataValues.lastName}`,
       },
     };
+    console.log("data: ", data);
     switch (gateway) {
       case "paystack":
         //write paystack logic
@@ -159,16 +163,21 @@ export const fundWallet = async (req: Request, res: Response) => {
         })
         break;
     }
-    // } catch (error) {
-    //   console.log(`Error: ${error}`);
-    //   return res.status(500).json({
-    //     status: false,
-    //     message: "Internal Server Error"
-    //   })
-    // }
+    } catch (error: any) {
+      console.log(`Error: ${error}`);
+      console.log(`Error: ${error.message}`);
+      // if(error.message === "jwt malformed"){
+      //   res.redirect("http://localhost:3000/");
+      // }
+      return res.status(500).json({
+        status: false,
+        message: "Internal Server Error"
+      })
+    }
   };
   
 export const validateFundWallet = async (req: Request, res: Response) => {
+  try {
     const { referenceId } = req.params;
     const { authorization } = req.headers;
     const token = `${authorization}`.split(" ")[1];
@@ -180,6 +189,7 @@ export const validateFundWallet = async (req: Request, res: Response) => {
       })
     }
     const userDetails = jwt.verify(token, JWT_SECRET!) as newJwtPayload;
+    console.log("referenceId: ", referenceId);
     if(!referenceId || typeof referenceId !== "string"){
       return res.status(400).json({
         status: false,
@@ -211,7 +221,7 @@ export const validateFundWallet = async (req: Request, res: Response) => {
       //get user id from token
       const user = await userExists(userDetails.id!) as unknown as UserData;
       // console.log("user: ", user)
-      console.log("user previous data: ", user._previousDataValues)
+      // console.log("user previous data: ", user._previousDataValues)
       if (!user || !user.id) return res.status(404).json({
         status: false,
         message: "User not found"
@@ -224,7 +234,8 @@ export const validateFundWallet = async (req: Request, res: Response) => {
         return res.status(404).json({ message: "Transaction not found" });
       }
       if(transactionDetails && transactionDetails.status === "completed"){
-        return res.status(400).json({ message: "Transaction has already been processed" });
+        return 
+        // res.status(200).json({ status: true, message: "Transaction has already been processed" });
       }
       // //update user's balance
       user.balance! += amount;
@@ -246,5 +257,13 @@ export const validateFundWallet = async (req: Request, res: Response) => {
         })
     });
   })
+  } catch (error) {
+    console.log(`Error: ${error}`);
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server Error"
+    })
+  }
+    
   
 };
