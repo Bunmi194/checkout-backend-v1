@@ -5,6 +5,7 @@ import fundRouter from "./routes/fund";
 import transferRouter from "./routes/transfer";
 import withdrawRouter from "./routes/withdraw";
 import statisticsRouter from "./routes/statistics";
+import webhookRouter from "./routes/webhook";
 import googleRoute from "./routes/google";
 import morgan from "morgan";
 import dotenv from "dotenv";
@@ -46,6 +47,7 @@ app.use("/v1/transfer", transferRouter);
 app.use("/v1/withdraw", withdrawRouter);
 app.use("/v1/statistics", statisticsRouter);
 app.use("/v1/strategy", googleRoute);
+app.use("/v1/webhook", webhookRouter);
 
 app.listen(port, ()=>{
     console.log(`listening on port ${port}`);
