@@ -51,10 +51,10 @@ export const giveStatistics = async (req: Request, res: Response) => {
         const userDetails = jwt.verify(token, jwtSecret!) as newJwtPayload;
         // console.log("userDetails: ", userDetails);
         if(!userDetails.id) return res.status(401).json({ status: false, message: "User not authorized" });
-        const getTransferDetails = await getAllTransferAmount() as unknown as Array<TransactionData>;
-        const getWithdrawalDetails = await getAllWithdrawalAmount() as unknown as Array<TransactionData>;
-        const getFundingDetails = await getAllFundingAmount() as unknown as Array<TransactionData>;
-        const getLastThreeTransactionDetails = await getLastThreeTransactions() as unknown as Array<TransactionData>;
+        const getTransferDetails = await getAllTransferAmount(Number(userDetails.id)) as unknown as Array<TransactionData>;
+        const getWithdrawalDetails = await getAllWithdrawalAmount(Number(userDetails.id)) as unknown as Array<TransactionData>;
+        const getFundingDetails = await getAllFundingAmount(Number(userDetails.id)) as unknown as Array<TransactionData>;
+        const getLastThreeTransactionDetails = await getLastThreeTransactions(Number(userDetails.id)) as unknown as Array<TransactionData>;
         const user = await userExists(userDetails.id) as unknown as UserData;
         console.log("user: ", user);
         let transferTotal = 0;

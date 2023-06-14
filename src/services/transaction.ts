@@ -1,5 +1,5 @@
 import Transactions from "../models/transactions";
-import { Optional, SaveOptions, Sequelize, Transaction } from "sequelize";
+import { Optional, SaveOptions, Sequelize, Transaction, Op } from "sequelize";
 import User from "../models/user";
 
 const sequelize = new Sequelize("checkout", "bunmi194", "bunmi194", {
@@ -68,10 +68,11 @@ export const transferTransactionQuery = async (recipientId: number, senderId: nu
 }
 
 //get all transfer amounts - expenditure
-export const getAllTransferAmount = async () => {
+export const getAllTransferAmount = async (id:number) => {
   return Transactions.findAll({
     attributes: ['amount'],
     where: {
+      userId: id,
       typeOfTransaction: "transfer",
       status: "completed",
     }
@@ -83,12 +84,13 @@ export const getAllTransferAmount = async () => {
   })
 }
 //get all withdrawal amounts - expenditure
-export const getAllWithdrawalAmount = async () => {
+export const getAllWithdrawalAmount = async (id: number) => {
   return Transactions.findAll({
     attributes: ['amount'],
     where: {
       typeOfTransaction: "withdrawal",
       status: "completed",
+      userId: id,
     }
   }).then(withdrawals => {
     return withdrawals;
@@ -98,12 +100,13 @@ export const getAllWithdrawalAmount = async () => {
   })
 }
 //get all funding amounts - income
-export const getAllFundingAmount = async () => {
+export const getAllFundingAmount = async (id: number) => {
   return Transactions.findAll({
     attributes: ['amount'],
     where: {
       typeOfTransaction: "fund",
       status: "completed",
+      userId: id,
     }
   }).then(fund => {
     return fund;
@@ -113,8 +116,14 @@ export const getAllFundingAmount = async () => {
   })
 }
 //get last 3 transactions
-export const getLastThreeTransactions = async () => {
+export const getLastThreeTransactions = async (id: number) => {
   return Transactions.findAll({
+    where: {
+      [Op.or]: [
+        {userId: {[Op.eq]: id}},
+        {recipientId: {[Op.eq]: id}},
+      ]
+    },
     order: [['createdAt', 'DESC']],
     limit: 3,
     include: User,
