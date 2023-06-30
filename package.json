@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node dist/server.js",
-    "build": "tsc && npm install",
+    "build": "npm install && tsc",
     "dev": "nodemon dist/server.js"
   },
   "keywords": [],
@@ -37,6 +37,7 @@
     "sequelize": "^6.31.1",
     "speakeasy": "^2.0.0",
     "stripe": "^12.8.0",
+    "typescript": "^5.1.6",
     "uuid": "^9.0.0",
     "uuidv4": "^6.2.13",
     "zod": "^3.21.4"
