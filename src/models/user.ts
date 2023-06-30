@@ -1,7 +1,12 @@
 import { Sequelize, Model, DataTypes } from "sequelize";
 
-const sequelize = new Sequelize("checkout", "bunmi194", "bunmi194", {
-  host: 'localhost',
+require("dotenv").config();
+const POSTGRES_NAME = process.env.POSTGRES_NAME || "checkout";
+const POSTGRES_USER = process.env.POSTGRES_USER || "bunmi194";
+const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || "bunmi194";
+const POSTGRES_HOST = process.env.POSTGRES_HOST;
+const sequelize = new Sequelize(`${POSTGRES_NAME}`, `${POSTGRES_USER}`, `${POSTGRES_PASSWORD}`, {
+  host: `172.20.10.4`,
   dialect: "postgres",
 });
 
@@ -39,16 +44,16 @@ User.init(
       allowNull: true,
     },
     balance: {
-      type: new DataTypes.INTEGER,
+      type: new DataTypes.INTEGER(),
     },
     isVerified: {
-      type: new DataTypes.BOOLEAN,
+      type: new DataTypes.BOOLEAN(),
       defaultValue: false,
     },
   },
   {
     tableName: "users",
-    sequelize, // passing the `sequelize` instance is required
+    sequelize,
   }
 );
 

@@ -1,10 +1,24 @@
 import express from "express";
-import { fundWallet, validateFundWallet } from "../controllers/fund";
+import {
+  validateInput,
+  fundWallet,
+  validateFundWallet,
+  authorizeUser,
+  getUserId,
+  checkCurrency,
+} from "../controllers/fund";
 
 const route = express.Router();
 
-route.post('/', fundWallet);
-route.get('/verify/:referenceId', validateFundWallet);
+route.post(
+  "/",
+  validateInput,
+  authorizeUser,
+  getUserId,
+  checkCurrency,
+  fundWallet
+);
+route.get("/verify/:referenceId", authorizeUser, validateFundWallet);
 
 const fundRouter = route;
 

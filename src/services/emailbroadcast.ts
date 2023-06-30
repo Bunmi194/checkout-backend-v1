@@ -1,5 +1,5 @@
 export const emailBroadcastFunction = (appName: string, content: string) => {
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
     <html>
     <head>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -75,5 +75,5 @@ export const emailBroadcastFunction = (appName: string, content: string) => {
       </div>
     </body>
     </html>
-    `
-  }
+    `;
+};

@@ -1,5 +1,5 @@
 import User from "../models/user";
-import { Request, response, Response } from "express";
+import { NextFunction, Request, response, Response } from "express";
 import {
   validateUserInputOnSignup,
   validateUserInputOnLogin,
@@ -19,6 +19,7 @@ import { emailBroadcastFunction } from "../services/emailbroadcast";
 import dotenv from "dotenv";
 import jwt, { Secret, JwtPayload } from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { StatusCodes } from "http-status-codes";
 import {
   initializePaymentPaystack,
   verifyPaymentPaystack,
@@ -65,126 +66,236 @@ interface TransactionData extends Optional<any, string>, SaveOptions<any> {
 
 const { APPNAME, JWT_SECRET, SALT_ROUNDS } = process.env;
 
-console.log("Details: ", APPNAME, JWT_SECRET, SALT_ROUNDS);
-
-export const signUserUp = async (req: Request, res: Response) => {
-  // console.log("body: ", req.body);
+export const validateUserSignUpInput = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     //validate user input
     const error = validateUserInputOnSignup.safeParse(req.body);
     console.log("error: ", error);
     if (error.success === false) {
-      console.log("error: ", JSON.stringify(error.error));
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
         message: error.error.issues[0].message,
       });
     }
-    const { email, password, confirmPassword, firstName, lastName } = req.body;
-    //validate password and confirm password
-    if (password !== confirmPassword) {
-      return res.status(400).json({
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message: "Please try again",
+    });
+  }
+};
+
+export const validateUserLogInInput = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    console.log("STAGE 1");
+    //validate user input
+    const error = validateUserInputOnLogin.safeParse(req.body);
+    if (error.success === false) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
-        message: "Passwords do not match",
+        message: error.error.issues[0].message,
       });
     }
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message: "Please try again",
+    });
+  }
+};
+
+export const validatePasswordAndConfirmPassword = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { password, confirmPassword } = req.body;
+  //validate password and confirm password
+  if (password !== confirmPassword) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message: "Passwords do not match",
+    });
+  }
+  next();
+};
+
+export const doesUserExistInDB = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { email } = req.body;
+  try {
     //check if user exists
     const user = await userExists(email);
     console.log("user: ", user);
     if (user && user.email) {
-      return res.status(400).json({
+      return res.status(StatusCodes.CONFLICT).json({
         status: false,
         message: "User already exists",
       });
     }
-    const token = await jwt.sign(
+    const token = jwt.sign(
       {
         email,
       },
       JWT_SECRET!
     );
+    req.body.token = token;
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message: "Please try again",
+    });
+  }
+};
+
+export const sendVerificationEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { email, token } = req.body;
+  try {
     //send email for validation with token
     const html = emailContentFunction(APPNAME!, token);
     const subject = "Checkout Email Verification";
     const sendEmailWithToken = await sendMail(email, subject, html);
     console.log("sendEmailWithToken: ", sendEmailWithToken);
-    //save user record in database
-    if (sendEmailWithToken?.accepted[0]) {
-      const salt = await bcrypt.genSalt(Number(SALT_ROUNDS!));
-      // console.log("salt: ", salt);
-      const encryptedPassword = await bcrypt.hash(password, salt);
-      const newUser = {
-        firstName,
-        lastName,
-        email,
-        password: encryptedPassword,
-        isVerified: false,
-        balance: 0,
-      };
-      const saveUser = await writeUserToDatabase(newUser);
-      // console.log("saveUser: ", saveUser);
-      if (!saveUser) {
-        return res.status(500).json({
-          status: false,
-          message: "Internal Server Error",
-        });
-      }
-      return res.status(201).json({
-        status: true,
-        message: "Signup successful",
-        saveUser,
-      });
-    }
-
-    return res.status(500).json({
-      status: false,
-      message: "Internal server error",
-    });
+    next();
   } catch (error) {
-    console.log("Error: ", error);
-    return res.status(500).json({
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.FAILED_DEPENDENCY).json({
       status: false,
-      message: "Internal server error",
+      message: "Please try again",
     });
   }
 };
 
-export const logUserIn = async (req: Request, res: Response) => {
+export const writeUserToDataBase = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { email, password, firstName, lastName } = req.body;
   try {
-    //validate user input
-    const error = validateUserInputOnLogin.safeParse(req.body);
-    if (error.success === false) {
-      return res.status(400).json({
+    const salt = await bcrypt.genSalt(Number(SALT_ROUNDS!));
+    const encryptedPassword = await bcrypt.hash(password, salt);
+    const newUser = {
+      firstName,
+      lastName,
+      email,
+      password: encryptedPassword,
+      isVerified: false,
+      balance: 0,
+    };
+    const saveUser = await writeUserToDatabase(newUser);
+    if (!saveUser) {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         status: false,
-        message: error.error.issues[0].message,
+        message: "Please try again later",
       });
     }
-    const { email, password } = req.body;
+    req.body.saveUser = saveUser;
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.FAILED_DEPENDENCY).json({
+      status: false,
+      message: "Please try again",
+    });
+  }
+};
+
+export const signUserUp = async (req: Request, res: Response) => {
+  const { saveUser } = req.body;
+  return res.status(StatusCodes.CREATED).json({
+    status: true,
+    message: "Signup successful",
+    saveUser,
+  });
+};
+
+export const isUserVerified = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { email } = req.body;
+  console.log("STAGE 2");
+  try {
     //check if user exists
     const user = (await userExists(email)) as unknown as UserData;
     if (!user) {
-      return res.status(404).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
         message: "Invalid email or password",
       });
     }
     //check if account is verified
     if (user && !user.isVerified) {
-      return res.status(403).json({
+      return res.status(StatusCodes.FORBIDDEN).json({
         status: false,
         message: "Please verify your account",
       });
     }
+    req.body.user = user;
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Please try again.",
+    });
+  }
+};
+
+export const verifyPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { password, user } = req.body;
+  console.log("STAGE 3");
+  try {
     //check password
     const passwordValid = await bcrypt.compare(password, user.password!);
     if (!passwordValid) {
-      return res.status(500).json({
+      return res.status(StatusCodes.FORBIDDEN).json({
         status: false,
         message: "Invalid email or password",
       });
     }
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Please try again.",
+    });
+  }
+};
+export const logUserIn = async (req: Request, res: Response) => {
+  const { email, user } = req.body;
+  console.log("STAGE 4");
+  try {
     //send a token
-    const token = await jwt.sign(
+    const token = jwt.sign(
       {
         email,
         id: user.id!,
@@ -192,82 +303,130 @@ export const logUserIn = async (req: Request, res: Response) => {
       JWT_SECRET!
     );
     if (!token) {
-      return res.status(500).json({
+      return res.status(StatusCodes.FAILED_DEPENDENCY).json({
         status: false,
-        message: "Internal Server Error",
+        message: "Please try again later",
       });
     }
-    return res.status(200).json({
+    return res.status(StatusCodes.OK).json({
       status: true,
       message: "Login successful",
       token,
       user,
     });
   } catch (error) {
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Internal Server Error",
+      message: "Please try again.",
     });
   }
 };
 
-export const verifyEmail = async (req: Request, res: Response) => {
+export const validateUserToken = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     //validate input parameter
     const token = req.params.token;
-    console.log("token: ", token);
     const error = validateToken.safeParse({ token: token });
     if (error.success === false) {
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
         message: error.error.issues[0].message,
       });
     }
+    next();
+  } catch (error) {
+    console.log(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Please try again",
+    });
+  }
+};
+
+export const decodeToken = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const token = req.params.token;
+  try {
     //decode jwt token
     const userEmail = jwt.verify(
       token,
       JWT_SECRET!
     ) as unknown as newJwtPayload;
     if (!userEmail || (userEmail && !userEmail.email!)) {
-      return res.status(403).send({
+      return res.status(StatusCodes.FORBIDDEN).send({
         status: false,
-        message: "Invalid JWT token",
+        message: "Unauthorized",
       });
     }
+    req.body.userEmail = userEmail;
+    next();
+  } catch (error) {
+    console.log(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Please try again",
+    });
+  }
+};
+
+export const doesUserExists = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { userEmail } = req.body;
+  try {
     //check if user exists
     const user = (await userExists(userEmail.email!)) as unknown as UserData;
-    // console.log("user: ", user);
     if (!user) {
-      return res.status(404).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
         message: "User does not exist",
       });
     }
-    //update user record in database
-    const updatedUserRec = {
-      ...user._previousDataValues,
-      isVerified: true,
-    };
-    // console.log("updatedUserRec: ", updatedUserRec);
+    req.body.user = user;
+    next();
+  } catch (error) {
+    console.log(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Please try again",
+    });
+  }
+};
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  const { user } = req.body;
+  const updatedUserRec = {
+    ...user._previousDataValues,
+    isVerified: true,
+  };
+  try {
     const updatedUser = (await updateUserRecord(
       user.id!,
       updatedUserRec
     )) as unknown as UserData;
-    // console.log("updatedUser: ", updatedUser);
     if (!updatedUser) {
-      return res.status(500).json({
+      return res.status(StatusCodes.FAILED_DEPENDENCY).json({
         status: false,
-        message: "Internal Server Error",
+        message: "Please try again later",
       });
     }
-    return res.status(200).json({
+    return res.status(StatusCodes.OK).json({
       status: true,
       message: "User verified successfully",
     });
   } catch (error) {
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Internal Server Error",
+      message: "Please try again.",
     });
   }
 };

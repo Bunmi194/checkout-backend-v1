@@ -1,14 +1,43 @@
 import express from "express";
-import { generateOTPForWithdrawal, processWithdrawal, verifyAccount, createTransferRecipientMiddleware, initiateTransferMiddleware } from "../controllers/withdraw";
+import {
+  validateInput,
+  authorizeUser,
+  authorizeUserForOTP,
+  verifyToken,
+  fetchUserDetails,
+  validateOTPForWithdrawal,
+  checkBalance,
+  generateOTPForWithdrawal,
+  processWithdrawal,
+  verifyAccount,
+  createTransferRecipientMiddleware,
+  initiateTransferMiddleware,
+} from "../controllers/withdraw";
 
 const route = express.Router();
 
-route.post('/', verifyAccount);
-route.post('/otp', generateOTPForWithdrawal);
-route.post('/initiate', createTransferRecipientMiddleware, initiateTransferMiddleware);
-// route.post('/transfer', initiateTransferMiddleware);
+route.post("/", validateInput, authorizeUser, verifyAccount);
+
+route.post(
+  "/otp",
+  validateInput,
+  authorizeUserForOTP,
+  verifyToken,
+  generateOTPForWithdrawal
+);
+
+route.post(
+  "/initiate",
+  validateInput,
+  authorizeUserForOTP,
+  verifyToken,
+  fetchUserDetails,
+  validateOTPForWithdrawal,
+  checkBalance,
+  createTransferRecipientMiddleware,
+  initiateTransferMiddleware
+);
 
 const withdrawRouter = route;
-
 
 export default withdrawRouter;

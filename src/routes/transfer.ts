@@ -1,13 +1,53 @@
 import express from "express";
-import { checkForUserDetails, generateOTPForDatabase, processTransfer } from "../controllers/transfer";
+import {
+  validateInput,
+  authenticateUser,
+  checkForUserDetails,
+  doesRecipientExist,
+  doesCurrencyMatch,
+  createOTPAndSave,
+  authenticateOTP,
+  checkTransactionReference,
+  checkUserBalance,
+  checkRecipientStatus,
+  checkTransaction,
+  verifyOTPDetails,
+  generateOTPForDatabase,
+  processTransfer,
+} from "../controllers/transfer";
 
 const route = express.Router();
 
-route.post('/', checkForUserDetails);
-route.post('/otp', generateOTPForDatabase);
-route.post('/process', processTransfer);
+route.post(
+  "/",
+  validateInput,
+  authenticateUser,
+  doesRecipientExist,
+  doesCurrencyMatch,
+  checkTransactionReference,
+  checkForUserDetails
+);
+
+route.post(
+  "/otp",
+  validateInput,
+  authenticateUser,
+  createOTPAndSave,
+  generateOTPForDatabase
+);
+
+route.post(
+  "/process",
+  validateInput,
+  authenticateUser,
+  authenticateOTP,
+  checkUserBalance,
+  checkRecipientStatus,
+  checkTransaction,
+  verifyOTPDetails,
+  processTransfer
+);
 
 const transferRouter = route;
-
 
 export default transferRouter;

@@ -5,17 +5,19 @@ import { Optional, SaveOptions } from "sequelize";
 const route = express.Router();
 require("../auth/google");
 
-interface UserData extends Optional<any, string>, SaveOptions<any>{
-    token?: string;
-    userExists?: [{
-        firstName?: string;
-        lastName?: string;
-        email?: string;
-        id?: number;
-        balance?: number;
-        password?: string;
-        currency?: string;
-    }]
+interface UserData extends Optional<any, string>, SaveOptions<any> {
+  token?: string;
+  userExists?: [
+    {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      id?: number;
+      balance?: number;
+      password?: string;
+      currency?: string;
+    }
+  ];
 }
 
 const GOOGLE_REDIRECT = process.env.GOOGLE_REDIRECT;
@@ -36,10 +38,12 @@ route.get(
     console.log("Handling Google callback URL...");
     next();
   },
-  passport.authenticate("google", { failureRedirect: "http://localhost:3000/" }),
+  passport.authenticate("google", {
+    failureRedirect: "http://localhost:3000/",
+  }),
   function (req: Request, res: Response) {
     try {
-        // Successful authentication, redirect home.
+      // Successful authentication, redirect home.
       console.log("Request: ", req.user);
       const newUser = req.user as UserData;
       const token = newUser.token || "";
@@ -53,13 +57,14 @@ route.get(
       const isVerified = newUser.userExist.isVerified || false;
       // console.log("Response: ", res);
       //token and some other details
-      if(token){
-          return res.redirect(`${GOOGLE_REDIRECT}/?token=${token}&email=${email}&firstName=${firstName}&lastName=${lastName}&id=${id}&currency=${currency}&balance=${balance}&isVerified=${isVerified}`);
+      if (token) {
+        return res.redirect(
+          `${GOOGLE_REDIRECT}/?token=${token}&email=${email}&firstName=${firstName}&lastName=${lastName}&id=${id}&currency=${currency}&balance=${balance}&isVerified=${isVerified}`
+        );
       }
       return res.redirect(`${GOOGLE_REDIRECT}`);
-
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   }
 );
