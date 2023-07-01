@@ -323,6 +323,7 @@ export const validateOTPForWithdrawal = async (
         message: "Invalid OTP. Time constraint of 10 minutes might have passed",
       });
     }
+    req.body.generatedTransaction = generatedTransaction;
     next();
   } catch (error) {
     console.error(`Error: ${error}`);
