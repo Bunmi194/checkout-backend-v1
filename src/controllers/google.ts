@@ -19,7 +19,7 @@ export const createUserOrLogin = async (profile: any) => {
         firstName: profile.name.givenName,
         lastName: profile.name.familyName,
         email,
-        password: "",
+        password: "google",
         isVerified: true,
         balance: 0,
       };
