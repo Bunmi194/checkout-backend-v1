@@ -476,6 +476,7 @@ export const initiateTransferMiddleware = async (
             message: "Please try again",
           });
         }
+        console.log("generatedTransaction: ", generatedTransaction);
         generatedTransaction.status = "completed";
         generatedTransaction.save();
         //send email notification
