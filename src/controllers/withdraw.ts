@@ -287,6 +287,7 @@ export const validateOTPForWithdrawal = async (
   res: Response,
   next: NextFunction
 ) => {
+  console.log("VALIDATE OTP");
   const { amount, otp } = req.body;
   const idempotentKey = req.headers.idempotentkey;
   try {
@@ -340,6 +341,7 @@ export const checkBalance = async (
   const { amount, completeUserDetails } = req.body;
   try {
     //check balance
+    console.log("CHECK BALANCE");
     if (completeUserDetails.balance! < Number(amount)) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
@@ -361,6 +363,7 @@ export const createTransferRecipientMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
+  console.log("CREATE TRANSFER RECIPIENT");
   const { bankAccount, bank, nameOnAccount } = req.body;
   try {
     //process withdrawal
@@ -427,6 +430,7 @@ export const initiateTransferMiddleware = async (
   req: Request,
   res: Response
 ) => {
+  console.log("INITIATE TRANSFER");
   const idempotentKey = req.headers.idempotentkey;
   const {
     amount,
