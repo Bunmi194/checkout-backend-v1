@@ -4,6 +4,8 @@ import { Optional, SaveOptions } from "sequelize";
 
 const route = express.Router();
 require("../auth/google");
+require("dotenv").config();
+const BASEURL = process.env.BASEURL;
 
 interface UserData extends Optional<any, string>, SaveOptions<any> {
   token?: string;
@@ -39,7 +41,7 @@ route.get(
     next();
   },
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:3000/",
+    failureRedirect: `${BASEURL}`,
   }),
   function (req: Request, res: Response) {
     try {

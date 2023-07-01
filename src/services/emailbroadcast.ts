@@ -1,3 +1,6 @@
+
+require("dotenv").config();
+const BASEURL = process.env.BASEURL;
 export const emailBroadcastFunction = (appName: string, content: string) => {
   return `<!DOCTYPE html>
     <html>
@@ -68,7 +71,7 @@ export const emailBroadcastFunction = (appName: string, content: string) => {
         <div class="content">
           <h2>Notification on your ${appName} account</h2>
           <p>${content}</p>
-          <p><a href="http://localhost:3000/" class="button">Login your Account</a></p>
+          <p><a href="`+BASEURL+`" class="button">Login your Account</a></p>
         </div>
         <p>If you have any questions, feel free to contact our support team.</p>
         <p>Best regards,<br>${appName} Team</p>
