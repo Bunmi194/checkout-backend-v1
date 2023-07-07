@@ -1,6 +1,6 @@
 # Checkout Backend V1
 
-This branch contains the source code for Checkout Backend. Checkout is a fintech web application built with TypeScript, PostgreSQL for data persistence and ExpressJS. You can interact with some of my other projects on my [Portfolio](https://bunmioladipupo-edf1263ld-bunmi194.vercel.app/).
+This branch contains the source code for Checkout Backend. Checkout is a fintech web application built with TypeScript, PostgreSQL for data persistence and ExpressJS. You can interact with some of my other projects on my [Portfolio](https://bunmioladipupo.vercel.app/).
 
 ## Dependencies
 
@@ -54,7 +54,7 @@ You can find the link to the frontend repository at [Checkout-Frontend](https://
 
 ## Closing
 
-Thank you for stopping by. Checkout the live project at [Checkout](https://checkout-frontend-three.vercel.app/) and pay me a visit at [my portfolio](https://bunmioladipupo-edf1263ld-bunmi194.vercel.app/)
+Thank you for stopping by. Checkout the live project at [Checkout](https://checkout-frontend-three.vercel.app/) and pay me a visit at [my portfolio](https://bunmioladipupo.vercel.app/)
 
 ```bash
 checkout$ exit
