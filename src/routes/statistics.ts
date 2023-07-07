@@ -1,9 +1,9 @@
 import express from "express";
-import { giveStatistics } from "../controllers/statistics";
+import { giveStatistics, authorizeUser } from "../controllers/statistics";
 
 const route = express.Router();
 
-route.get('/', giveStatistics);
+route.get("/", authorizeUser, giveStatistics);
 
 const statisticsRouter = route;
 

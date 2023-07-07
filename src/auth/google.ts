@@ -6,7 +6,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 passport.use(new GoogleStrategy({
     clientID: '438019500256-bedaq8kmin6s0inlm66s7tge856fkq8k.apps.googleusercontent.com',
     clientSecret: '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',
-    callbackURL: `${process.env.APP_URL}v1/strategy/google`
+    callbackURL: `${process.env.APP_URL}/v1/strategy/google`
   },
   async function(accessToken, refreshToken, profile, done) {
     try {

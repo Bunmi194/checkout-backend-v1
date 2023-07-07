@@ -1,5 +1,8 @@
+
+require("dotenv").config();
+const BASEURL = process.env.BASEURL;
 export const emailContentFunction = (appName: string, token: string) => {
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
     <html>
     <head>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -68,12 +71,12 @@ export const emailContentFunction = (appName: string, token: string) => {
         <div class="content">
           <h2>Welcome to ${appName}!</h2>
           <p>Thank you for signing up. Please click the button below to verify your account and get started.</p>
-          <p><a href="http://localhost:3000/verify/?token=${token}" class="button">Verify Account</a></p>
+          <p><a href=${BASEURL}/verify/?token=${token} class="button">Verify Account</a></p>
         </div>
         <p>If you have any questions, feel free to contact our support team.</p>
         <p>Best regards,<br>${appName} Team</p>
       </div>
     </body>
     </html>
-    `
-  }
+    `;
+};

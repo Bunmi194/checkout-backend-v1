@@ -1,0 +1,30 @@
+version: "3"
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: "bunmi194"
+      DATABASE_NAME: "checkout"
+      DATABASE_USER: "bunmi194"
+      DATABASE_PASSWORD: "bunmi194"
+      POSTGRES_PASSWORD: "bunmi194"
+      POSTGRES_DB: "checkout"
+      POSTGRES_HOST: "172.20.10.4"
+    ports:
+      - "172.20.10.4:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+
+volumes:
+  postgres_data:

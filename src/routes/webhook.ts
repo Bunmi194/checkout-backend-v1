@@ -3,9 +3,8 @@ import { paystackWebhook } from "../controllers/webhook";
 
 const route = express.Router();
 
-route.post('/', paystackWebhook);
+route.post("/", paystackWebhook);
 
 const webhookRouter = route;
-
 
 export default webhookRouter;

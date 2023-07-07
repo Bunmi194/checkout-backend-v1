@@ -1,4 +1,4 @@
-import speakeasy from 'speakeasy';
+import speakeasy from "speakeasy";
 
 const secret = speakeasy.generateSecret({ length: 20 });
 const secretKey = secret.base32;
@@ -11,7 +11,7 @@ export const generateOTP = () => {
     secret: secretKey,
     // counter: counter,
     digits: 6,
-    encoding: 'base32',
+    encoding: "base32",
     step: 600,
   });
   return {
@@ -22,14 +22,14 @@ export const generateOTP = () => {
 
 // console.log('generateOTP: ', generateOTP());
 
-export const verifyOTP = (token:string, newSecretKey:string) => {
+export const verifyOTP = (token: string, newSecretKey: string) => {
   const val = speakeasy.totp.verify({
     secret: newSecretKey,
-    encoding: 'base32',
+    encoding: "base32",
     token: token,
     step: 600,
   });
-  console.log('val: ', val);
+  console.log("val: ", val);
   return val;
 };
 

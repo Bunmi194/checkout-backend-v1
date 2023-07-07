@@ -1,14 +1,26 @@
 import { Sequelize, Model, DataTypes } from "sequelize";
 import User from "./user";
-
-const sequelize = new Sequelize("checkout", "bunmi194", "bunmi194", {
-  host: 'localhost',
+require("dotenv").config();
+const POSTGRES_NAME = process.env.POSTGRES_NAME || "checkout";
+const POSTGRES_USER = process.env.POSTGRES_USER || "bunmi194";
+const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || "bunmi194";
+const POSTGRES_HOST = process.env.POSTGRES_HOST;
+const sequelize = new Sequelize(`${POSTGRES_NAME}`, `${POSTGRES_USER}`, `${POSTGRES_PASSWORD}`, {
+  host: `${POSTGRES_HOST}`,
   dialect: "postgres",
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false, // Use this option if you encounter certificate verification issues
+    },
+  },
 });
 
-//for each transaction, you need the user's id, amount, type of transaction, recipientId if any, status, 
 class Transactions extends Model {
-  static find(arg0: { attributes: string[]; where: { typeOfTransaction: string; }; }) {
+  static find(arg0: {
+    attributes: string[];
+    where: { typeOfTransaction: string };
+  }) {
     throw new Error("Method not implemented.");
   }
   declare userId: number;
@@ -29,12 +41,12 @@ class Transactions extends Model {
 Transactions.init(
   {
     userId: {
-      type: new DataTypes.INTEGER,
+      type: new DataTypes.INTEGER(),
       allowNull: false,
       references: {
         model: User,
-        key: "id"
-      }
+        key: "id",
+      },
     },
     typeOfTransaction: {
       type: new DataTypes.STRING(128),
@@ -62,39 +74,42 @@ Transactions.init(
       allowNull: false,
     },
     recipientId: {
-      type: new DataTypes.INTEGER,
+      type: new DataTypes.INTEGER(),
       allowNull: true,
       references: {
         model: User,
-        key: "id"
-      }
+        key: "id",
+      },
     },
     status: {
       type: new DataTypes.STRING(128),
       allowNull: false,
     },
     amount: {
-      type: new DataTypes.INTEGER,
+      type: new DataTypes.INTEGER(),
       allowNull: false,
     },
     bankAccount: {
-      type: new DataTypes.STRING,
+      type: new DataTypes.STRING(),
       allowNull: true,
     },
     nameOnAccount: {
-      type: new DataTypes.STRING,
+      type: new DataTypes.STRING(),
       allowNull: true,
     },
     bank: {
-      type: new DataTypes.STRING,
+      type: new DataTypes.STRING(),
       allowNull: true,
-    }
+    },
   },
   {
     tableName: "transactions",
-    sequelize, // passing the `sequelize` instance is required
+    sequelize,
   }
 );
-// User.hasMany(Transactions);
-Transactions.belongsTo(User, { foreignKey: "recipientId", foreignKeyConstraint: true});
+
+Transactions.belongsTo(User, {
+  foreignKey: "recipientId",
+  foreignKeyConstraint: true,
+});
 export default Transactions;

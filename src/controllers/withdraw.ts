@@ -16,6 +16,7 @@ import Transactions from "../models/transactions";
 import { sequelize } from "../config/database";
 import User from "../models/user";
 import { withdrawalTransactionQuery } from "../services/userTransaction";
+import { StatusCodes } from "http-status-codes";
 require("dotenv").config();
 
 const { APPNAME, JWT_SECRET, SALT_ROUNDS } = process.env;
@@ -52,21 +53,40 @@ interface TransactionData extends Optional<any, string>, SaveOptions<any> {
   nameOnAccount?: string;
 }
 
-export const verifyAccount = async (req: Request, res: Response) => {
+export const validateInput = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const errors = validateWithdrawalInputs.safeParse(req.body);
     if (errors.success === false) {
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
         message: errors.error.issues[0].message,
       });
     }
-    const { bankAccount, bank } = req.body;
-    const { authorization } = req.headers;
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Please try again.",
+    });
+  }
+};
+
+export const authorizeUser = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { authorization } = req.headers;
+  try {
     if (!authorization) {
-      return res.status(401).json({
+      return res.status(StatusCodes.UNAUTHORIZED).json({
         status: false,
-        message: "Bad request",
+        message: "Unauthorized",
       });
     }
     const token = authorization.split(" ")[1];
@@ -75,24 +95,35 @@ export const verifyAccount = async (req: Request, res: Response) => {
       JWT_SECRET!
     ) as unknown as newJwtPayload;
     if (!userDetails || !userDetails.id) {
-      return res.status(401).json({
+      return res.status(StatusCodes.FORBIDDEN).json({
         status: false,
-        message: "Bad request",
+        message: "Forbidden",
       });
     }
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Please try again.",
+    });
+  }
+};
+
+export const verifyAccount = async (req: Request, res: Response) => {
+  const { bankAccount, bank } = req.body;
+  try {
     verifyAccountNumber(
       `${bankAccount}`,
       `${bank}`,
       async (err: any, response: any) => {
-        // console.log("err: ", err);
-        // console.log("response: ", response.body);
         if (err) {
-          return res.status(500).json({
+          return res.status(StatusCodes.FAILED_DEPENDENCY).json({
             status: false,
             message: "Could not fetch bank details",
           });
         }
-        return res.status(200).json({
+        return res.status(StatusCodes.OK).json({
           status: true,
           message: "Bank details retrieved successfully",
           response: JSON.parse(response.body),
@@ -100,7 +131,51 @@ export const verifyAccount = async (req: Request, res: Response) => {
       }
     );
   } catch (error) {
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const authorizeUserForOTP = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { authorization } = req.headers;
+  const idempotentKey = req.headers.idempotentkey;
+  if (!authorization || !idempotentKey) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message: "Authorization token and Idempotent Key are required",
+    });
+  }
+  const token = authorization?.split(" ")[1];
+  req.body.token = token;
+  next();
+};
+
+export const verifyToken = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { token } = req.body;
+  try {
+    //verify token
+    const senderDetails = jwt.verify(token, JWT_SECRET!) as newJwtPayload;
+    if (!senderDetails || !senderDetails.id || !senderDetails.email) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+    req.body.senderDetails = senderDetails;
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Internal Server Error",
     });
@@ -108,37 +183,9 @@ export const verifyAccount = async (req: Request, res: Response) => {
 };
 
 export const generateOTPForWithdrawal = async (req: Request, res: Response) => {
-  //send otp and save in db
+  const idempotentKey = req.headers.idempotentkey;
+  const { amount, bankAccount, bank, nameOnAccount, senderDetails } = req.body;
   try {
-    //validate user input
-    const error = validateWithdrawalInputs.safeParse(req.body);
-    const { authorization } = req.headers;
-    const idempotentKey = req.headers.idempotentkey;
-    const { amount, bankAccount, bank, nameOnAccount } = req.body;
-    console.log("idempotentKey: ", idempotentKey);
-    if (!authorization || !idempotentKey) {
-      return res.status(400).json({
-        status: false,
-        message: "Authorization token and Idempotent Key are required",
-      });
-    }
-    const token = authorization?.split(" ")[1];
-    if (error.success === false) {
-      return res.status(400).json({
-        status: false,
-        message: error.error.issues[0].message,
-      });
-    }
-    //verify token
-    const senderDetails = jwt.verify(token, JWT_SECRET!) as newJwtPayload;
-
-    if (!senderDetails || !senderDetails.id || !senderDetails.email) {
-      return res.status(400).json({
-        status: false,
-        message: "Bad request",
-      });
-    }
-
     //generate OTP
     const otpDetails = generateOTP();
     //check if idempotentKey exists
@@ -146,14 +193,13 @@ export const generateOTPForWithdrawal = async (req: Request, res: Response) => {
       where: { transactionReference: idempotentKey },
     })) as unknown as TransactionData;
     if (newGeneratedTransaction && newGeneratedTransaction.id) {
-      return res.status(400).json({
+      return res.status(StatusCodes.CONFLICT).json({
         status: false,
         message:
           "Transaction reference already exists. Please edit your input and retry.",
       });
     }
     //save transaction details with OTP
-    console.log("otpDetails: ", otpDetails);
     const transaction = {
       userId: senderDetails.id,
       typeOfTransaction: "withdrawal",
@@ -174,9 +220,9 @@ export const generateOTPForWithdrawal = async (req: Request, res: Response) => {
     )) as unknown as TransactionData;
 
     if (!generatedTransaction || !generatedTransaction.id) {
-      return res.status(500).json({
+      return res.status(StatusCodes.FAILED_DEPENDENCY).json({
         status: false,
-        message: "Internal Server Error",
+        message: "Please try again.",
       });
     }
     //send OTP to email
@@ -184,13 +230,13 @@ export const generateOTPForWithdrawal = async (req: Request, res: Response) => {
     const content = `Please use ${otpDetails.otp} as your OTP. This token expires in 10 minutes.`;
     const contentHTML = emailBroadcastFunction(APPNAME!, content);
     await sendMail(`${senderDetails.email}`, subject, contentHTML);
-    return res.status(200).json({
+    return res.status(StatusCodes.OK).json({
       status: true,
       message: "OTP sent successfully",
     });
   } catch (error) {
     console.log(`Error: ${error}`);
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Internal Server Error",
     });
@@ -207,65 +253,56 @@ export const validateWithdrawalInputsFunction = () => {
   //on success, debit user account
   //send response
 };
-export const createTransferRecipientMiddleware = async (
+
+export const fetchUserDetails = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  //validate inputs
+  const { senderDetails: userDetails } = req.body;
   try {
-    const errors = validateWithdrawalInputs.safeParse(req.body);
-    if (errors.success === false) {
-      return res.status(400).json({
-        status: false,
-        message: errors.error.issues[0].message,
-      });
-    }
-    const idempotentKey = req.headers.idempotentkey;
-    console.log("idempotentKey: ", idempotentKey);
-    const { bankAccount, bank, nameOnAccount, amount, otp } = req.body;
-    const { authorization } = req.headers;
-    //check idempotent key
-    if (!authorization || !idempotentKey) {
-      return res.status(401).json({
-        status: false,
-        message: "Bad request",
-      });
-    }
-    //check token
-    const token = authorization.split(" ")[1];
-    const userDetails = jwt.verify(
-      token,
-      JWT_SECRET!
-    ) as unknown as newJwtPayload;
-    if (!userDetails || !userDetails.id) {
-      return res.status(401).json({
-        status: false,
-        message: "Bad request",
-      });
-    }
     //fetch user's complete information
     const completeUserDetails = (await userExists(
       Number(userDetails.id)
     )) as unknown as UserData;
     if (!completeUserDetails || !completeUserDetails.id) {
-      return res.status(404).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
         message: "User does not exist",
       });
     }
+    req.body.completeUserDetails = completeUserDetails;
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const validateOTPForWithdrawal = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  console.log("VALIDATE OTP");
+  const { amount, otp } = req.body;
+  const idempotentKey = req.headers.idempotentkey;
+  try {
     const generatedTransaction = (await Transactions.findOne({
       where: { amount: amount, transactionReference: idempotentKey },
     })) as unknown as TransactionData;
 
     if (!generatedTransaction || !generatedTransaction.id) {
-      return res.status(404).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
         message: "Transaction does not exist",
       });
     }
     if (!generatedTransaction.otp || !generatedTransaction.secretKey) {
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
         message: "Error fetching transaction OTP",
       });
@@ -274,25 +311,62 @@ export const createTransferRecipientMiddleware = async (
     console.log("generatedTransaction: ", generatedTransaction.otp, otp);
     console.log("generatedTransaction: ", generatedTransaction.secretKey);
     if (generatedTransaction.otp !== otp) {
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
         message: "Invalid OTP. Please type most recent OTP",
       });
     }
     const isOTPValid = verifyOTP(otp, `${generatedTransaction.secretKey}`);
     if (!isOTPValid) {
-      return res.status(401).json({
+      return res.status(StatusCodes.FORBIDDEN).json({
         status: false,
         message: "Invalid OTP. Time constraint of 10 minutes might have passed",
       });
     }
+    req.body.generatedTransaction = generatedTransaction;
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const checkBalance = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { amount, completeUserDetails } = req.body;
+  try {
     //check balance
+    console.log("CHECK BALANCE");
     if (completeUserDetails.balance! < Number(amount)) {
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
         message: "Insufficient balance",
       });
     }
+    next();
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const createTransferRecipientMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  console.log("CREATE TRANSFER RECIPIENT");
+  const { bankAccount, bank, nameOnAccount } = req.body;
+  try {
     //process withdrawal
 
     //process to create recipient code
@@ -303,15 +377,50 @@ export const createTransferRecipientMiddleware = async (
       bank_code: `${bank}`,
       currency: "NGN",
     };
-    // console.log("formData: ", formData)
     createTransferRecipient(formData, async (err: any, result: any) => {
-      if (err) return res.status(500).json({ status: false, message: err });
-      // console.log("result: ", result);
+      if (err)
+        return res
+          .status(StatusCodes.FAILED_DEPENDENCY)
+          .json({ status: false, message: err });
       req.body.result = JSON.parse(result.body);
       next();
     });
   } catch (error) {
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const hasIdempotentKeyBeenUsed = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { amount } = req.body;
+  const idempotentKey = req.headers.idempotentkey;
+  try {
+    //check if idempotentKey has been used
+    const generatedTransaction = (await Transactions.findOne({
+      where: { amount: amount, transactionReference: idempotentKey },
+    })) as unknown as TransactionData;
+    if (!generatedTransaction || !generatedTransaction.id) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "Transaction not found",
+      });
+    }
+    if (generatedTransaction.status === "completed") {
+      return res.status(StatusCodes.CONFLICT).json({
+        status: false,
+        message: "Transaction has already been completed",
+      });
+    }
+    req.body.generatedTransaction = generatedTransaction;
+    next();
+  } catch (error) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Internal Server Error",
     });
@@ -322,73 +431,20 @@ export const initiateTransferMiddleware = async (
   req: Request,
   res: Response
 ) => {
+  console.log("INITIATE TRANSFER");
+  const idempotentKey = req.headers.idempotentkey;
+  const {
+    amount,
+    generatedTransaction,
+    completeUserDetails,
+    result: recipientObj,
+  } = req.body;
+  const recipientId = recipientObj.data.recipient_code;
   try {
     const transaction = await sequelize.transaction();
 
-    const errors = validateWithdrawalInputs.safeParse(req.body);
-    if (errors.success === false) {
-      return res.status(400).json({
-        status: false,
-        message: errors.error.issues[0].message,
-      });
-    }
-    const idempotentKey = req.headers.idempotentkey;
-    const { bankAccount, bank, nameOnAccount, amount } = req.body;
-    const recipientObj = req.body.result;
-    const recipientId = recipientObj.data.recipient_code;
-    console.log("recipientObj: ", recipientObj);
-    console.log("recipientId: ", recipientId);
-    const { authorization } = req.headers;
-    if (!authorization) {
-      return res.status(401).json({
-        status: false,
-        message: "Bad request",
-      });
-    }
-    const token = authorization.split(" ")[1];
-    const userDetails = jwt.verify(
-      token,
-      JWT_SECRET!
-    ) as unknown as newJwtPayload;
-    if (!userDetails || !userDetails.id) {
-      return res.status(401).json({
-        status: false,
-        message: "Bad request",
-      });
-    }
-    //check if idempotentKey has been used
-    const generatedTransaction = (await Transactions.findOne({
-      where: { amount: amount, transactionReference: idempotentKey },
-    })) as unknown as TransactionData;
-    if (!generatedTransaction || !generatedTransaction.id) {
-      return res.status(404).json({
-        status: false,
-        message: "Transaction not found",
-      });
-    }
-    if (generatedTransaction.status === "completed") {
-      return res.status(400).json({
-        status: false,
-        message: "Transaction has already been completed",
-      });
-    }
-
-    //fetch user's complete information
-    const completeUserDetails = (await User.findOne({
-      where: { id: userDetails.id },
-    })) as unknown as UserData;
-    if (
-      !completeUserDetails ||
-      !completeUserDetails.id ||
-      !completeUserDetails.balance
-    ) {
-      return res.status(404).json({
-        status: false,
-        message: "User does not exist",
-      });
-    }
     if (completeUserDetails.balance < Number(amount)) {
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
         message: "Insufficient funds",
       });
@@ -403,15 +459,11 @@ export const initiateTransferMiddleware = async (
     };
 
     initiateTransfer(formData, async (err: any, result: any) => {
-      console.log("err: ", err);
-      // console.log("result: ", result)
       if (err)
-        return res
-          .status(500)
-          .json({
-            status: false,
-            message: "Failed to complete withdrawal request",
-          });
+        return res.status(StatusCodes.FAILED_DEPENDENCY).json({
+          status: false,
+          message: "Failed to complete withdrawal request",
+        });
       const response = JSON.parse(result.body);
       if (response) {
         //on success, debit user account
@@ -420,11 +472,12 @@ export const initiateTransferMiddleware = async (
           Number(amount)
         );
         if (!withdraw) {
-          return res.status(500).json({
+          return res.status(StatusCodes.FAILED_DEPENDENCY).json({
             status: false,
-            message: "Internal Server Error",
+            message: "Please try again",
           });
         }
+        console.log("generatedTransaction: ", generatedTransaction);
         generatedTransaction.status = "completed";
         generatedTransaction.save();
         //send email notification
@@ -433,7 +486,7 @@ export const initiateTransferMiddleware = async (
         const contentHTML = emailBroadcastFunction(APPNAME!, content);
         await sendMail(`${completeUserDetails.email}`, subject, contentHTML);
         //send response
-        return res.status(200).json({
+        return res.status(StatusCodes.OK).json({
           status: true,
           message: "Withdrawal completed successfully",
           response: JSON.parse(result.body),
@@ -442,7 +495,7 @@ export const initiateTransferMiddleware = async (
     });
   } catch (error) {
     console.log(`Error: ${error}`);
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Internal Server Error",
     });
