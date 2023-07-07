@@ -31,11 +31,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(morgan("tiny"));
 const port = process.env.PORT || 4000;
-const POSTGRES_NAME = process.env.POSTGRES_NAME || "checkout";
-const POSTGRES_USER = process.env.POSTGRES_USER || "bunmi194";
-const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || "bunmi194";
+const POSTGRES_NAME = process.env.POSTGRES_NAME;
+const POSTGRES_USER = process.env.POSTGRES_USER;
+const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD;
 const POSTGRES_HOST = process.env.POSTGRES_HOST;
-console.log("details: ", POSTGRES_NAME, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST)
+
 const sequelize = new Sequelize(`${POSTGRES_NAME}`, `${POSTGRES_USER}`, `${POSTGRES_PASSWORD}`, {
   host: `${POSTGRES_HOST}`,
   dialect: "postgres",

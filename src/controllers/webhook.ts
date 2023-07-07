@@ -32,8 +32,8 @@ interface UserData extends Optional<any, string>, SaveOptions<any> {
   password?: string;
   currency?: string;
 }
-const APPNAME = process.env.APPNAME || "Ckeckout";
-const secret = "sk_test_1c6935580e77aee5f31ad70219030a3ea7dd09ab";
+const APPNAME = process.env.APPNAME || "";
+const secret = process.env.PAYSTACK_SECRET || "";
 export const paystackWebhook = (req: Request, res: Response) => {
   try {
     const hash = crypto
@@ -42,15 +42,11 @@ export const paystackWebhook = (req: Request, res: Response) => {
       .digest("hex");
     if (hash === req.headers["x-paystack-signature"]) {
       const event = req.body;
-      console.log("event: ", event);
       if (event.event === "charge.success") {
         const referenceId = event.data.reference;
         verifyPaymentPaystack(referenceId, async (error: any, body: any) => {
           if (error) return;
-          console.log("body: ", body);
           const response = JSON.parse(body);
-          console.log("response: ", response);
-          console.log("status: ", response.status);
           if (!response || !response.status) return;
           if (response.data.gateway_response !== "Successful") return;
           const amount = response.data.amount / 100;
@@ -60,7 +56,6 @@ export const paystackWebhook = (req: Request, res: Response) => {
           const transactionDetails = (await Transactions.findOne({
             where: { transactionReference: referenceId, amount: amount },
           })) as unknown as TransactionData;
-          console.log("transactionDetails: ", transactionDetails);
           if (
             !transactionDetails ||
             !transactionDetails.id ||

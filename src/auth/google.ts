@@ -3,9 +3,11 @@ import { createUserOrLogin } from "../controllers/google";
 require("dotenv").config();
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 passport.use(new GoogleStrategy({
-    clientID: '438019500256-bedaq8kmin6s0inlm66s7tge856fkq8k.apps.googleusercontent.com',
-    clientSecret: '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',
+    clientID: `${CLIENT_ID}`,
+    clientSecret: `${CLIENT_SECRET}`,
     callbackURL: `${process.env.APP_URL}/v1/strategy/google`
   },
   async function(accessToken, refreshToken, profile, done) {

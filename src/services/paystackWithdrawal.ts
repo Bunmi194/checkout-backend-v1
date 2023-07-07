@@ -4,7 +4,7 @@ require("dotenv").config();
 
 const token =
   process.env.PAYSTACK_API_SECRET_KEY_TEST ||
-  "sk_test_1c6935580e77aee5f31ad70219030a3ea7dd09ab";
+  "";
 
 //verify the account number
 export const verifyAccountNumber = (
@@ -29,7 +29,6 @@ export const verifyAccountNumber = (
 
 //create a transfer recipient
 export const createTransferRecipient = (formData: any, callback: Function) => {
-  // console.log("formDataLIIIITT: ", formData);
   const options = {
     url: `https://api.paystack.co/transferrecipient`,
     method: "POST",
