@@ -20,7 +20,9 @@ Although it is advised that you sign up on the platform for full access (typical
 **Caveat**
 Please note that the details are for testing purposes only and there is a posibility that someone somewhere might be using the same details as you simultaneously which could distort your user experience.
 
-- **Test Details**: Email: `test@mail.com`, Password: `test1234`.
+- **Test Details**: 
+
+No test details available.
 
 ## Sign up and log in
 
