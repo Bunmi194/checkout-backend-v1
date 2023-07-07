@@ -27,8 +27,6 @@ const GOOGLE_REDIRECT = process.env.GOOGLE_REDIRECT;
 route.get(
   "/auth/google",
   function (req: Request, res: Response, next: NextFunction) {
-    console.log("GOOGLE_REDIRECT: ", GOOGLE_REDIRECT);
-    console.log(`Loading API library`);
     next();
   },
   passport.authenticate("google", { scope: ["profile", "email"] })
@@ -37,7 +35,6 @@ route.get(
 route.get(
   "/google",
   function (req: Request, res: Response, next: NextFunction) {
-    console.log("Handling Google callback URL...");
     next();
   },
   passport.authenticate("google", {
@@ -46,7 +43,6 @@ route.get(
   function (req: Request, res: Response) {
     try {
       // Successful authentication, redirect home.
-      console.log("Request: ", req.user);
       const newUser = req.user as UserData;
       const token = newUser.token || "";
       //userExists = req.user.userExists;
@@ -57,7 +53,6 @@ route.get(
       const currency = newUser.userExist.currency || "";
       const balance = newUser.userExist.balance || "";
       const isVerified = newUser.userExist.isVerified || false;
-      // console.log("Response: ", res);
       //token and some other details
       if (token) {
         return res.redirect(
@@ -67,6 +62,7 @@ route.get(
       return res.redirect(`${GOOGLE_REDIRECT}`);
     } catch (error) {
       console.log(error);
+      return res.redirect(`${GOOGLE_REDIRECT}`);
     }
   }
 );

@@ -87,7 +87,6 @@ export const authorizeUser = (
   const { authorization: rawToken } = req.headers;
   try {
     //validate token
-    console.log("auth: ", req.headers.authorization);
     let { amount } = req.body;
     amount = Number(amount);
     const token = rawToken?.split(" ")[1];
@@ -97,9 +96,7 @@ export const authorizeUser = (
         message: "Permission denied",
       });
     }
-    console.log("token: ", token);
     const fundDetails = jwt.verify(token, JWT_SECRET!) as newJwtPayload;
-    console.log("fundDetails: ", fundDetails);
     if (!fundDetails || !fundDetails.id) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         status: false,
@@ -126,8 +123,6 @@ export const getUserId = async (
   try {
     //get user id from token
     const user = (await userExists(fundDetails.id)) as unknown as UserData;
-    // console.log("user: ", user)
-    console.log("user previous data: ", user._previousDataValues);
     if (!user.id)
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
@@ -199,7 +194,6 @@ export const fundWallet = async (req: Request, res: Response) => {
         name: `${user._previousDataValues.firstName} ${user._previousDataValues.lastName}`,
       },
     };
-    console.log("data: ", data);
     switch (gateway) {
       case "paystack":
         initializePaymentPaystack(
@@ -241,7 +235,6 @@ export const fundWallet = async (req: Request, res: Response) => {
         );
         break;
       case "flutterwave":
-        console.log("USSD");
         break;
       default:
         res.status(StatusCodes.BAD_REQUEST).json({
@@ -296,7 +289,6 @@ export const validateFundWallet = async (req: Request, res: Response) => {
       const transactionDetails = (await Transactions.findOne({
         where: { transactionReference: referenceId, amount: amount },
       })) as unknown as TransactionData;
-      console.log("transactionDetails: ", transactionDetails);
       if (!transactionDetails || !transactionDetails.id) {
         return res
           .status(StatusCodes.NOT_FOUND)

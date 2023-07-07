@@ -55,7 +55,6 @@ export const authorizeUser = (
   }
   try {
     const userDetails = jwt.verify(token, jwtSecret!) as newJwtPayload;
-    // console.log("userDetails: ", userDetails);
     if (!userDetails.id)
       return res
         .status(StatusCodes.UNAUTHORIZED)
@@ -86,7 +85,6 @@ export const giveStatistics = async (req: Request, res: Response) => {
       Number(userDetails.id)
     )) as unknown as Array<TransactionData>;
     const user = (await userExists(userDetails.id)) as unknown as UserData;
-    console.log("user: ", user);
     if(!user) return res.status(StatusCodes.NOT_FOUND).json({
       status: false, message: "User does not exist"
     });
@@ -102,7 +100,6 @@ export const giveStatistics = async (req: Request, res: Response) => {
     getWithdrawalDetails.forEach(
       (withdrawal: any) => (withdrawTotal += withdrawal.amount)
     );
-    console.log("userDetails: ", userDetails);
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Statistics sent successfully",

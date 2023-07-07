@@ -33,9 +33,9 @@ import Flutterwave from "flutterwave-node-v3";
 
 const FLWTOKEN =
   process.env.FLUTTERWAVE_API_SECRET_KEY_TEST ||
-  "FLWSECK_TEST-25f9d923e1d66d20670c2846f88e4cdb-X";
-const publicKey = "FLWPUBK_TEST-61f4488e423858da2fe2f35dae6010cf-X";
-const encryptionKey: string = "FLWSECK_TESTe843f37d9496";
+  "";
+const publicKey = process.env.FLUTTERWAVE_PUBLIC_KEY || "";
+const encryptionKey: string = process.env.FLUTTERWAVE_ENCRYPTION_KEY || "";
 
 interface UserData extends Optional<any, string>, SaveOptions<any> {
   firstName?: string;
@@ -74,7 +74,6 @@ export const validateUserSignUpInput = (
   try {
     //validate user input
     const error = validateUserInputOnSignup.safeParse(req.body);
-    console.log("error: ", error);
     if (error.success === false) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
@@ -97,7 +96,6 @@ export const validateUserLogInInput = (
   next: NextFunction
 ) => {
   try {
-    console.log("STAGE 1");
     //validate user input
     const error = validateUserInputOnLogin.safeParse(req.body);
     if (error.success === false) {
@@ -141,7 +139,6 @@ export const doesUserExistInDB = async (
   try {
     //check if user exists
     const user = await userExists(email);
-    console.log("user: ", user);
     if (user && user.email) {
       return res.status(StatusCodes.CONFLICT).json({
         status: false,
@@ -176,7 +173,6 @@ export const sendVerificationEmail = async (
     const html = emailContentFunction(APPNAME!, token);
     const subject = "Checkout Email Verification";
     const sendEmailWithToken = await sendMail(email, subject, html);
-    console.log("sendEmailWithToken: ", sendEmailWithToken);
     next();
   } catch (error) {
     console.error(`Error: ${error}`);
@@ -237,7 +233,6 @@ export const isUserVerified = async (
   next: NextFunction
 ) => {
   const { email } = req.body;
-  console.log("STAGE 2");
   try {
     //check if user exists
     const user = (await userExists(email)) as unknown as UserData;
@@ -271,7 +266,6 @@ export const verifyPassword = async (
   next: NextFunction
 ) => {
   const { password, user } = req.body;
-  console.log("STAGE 3");
   try {
     //check password
     const passwordValid = await bcrypt.compare(password, user.password!);
@@ -292,7 +286,6 @@ export const verifyPassword = async (
 };
 export const logUserIn = async (req: Request, res: Response) => {
   const { email, user } = req.body;
-  console.log("STAGE 4");
   try {
     //send a token
     const token = jwt.sign(

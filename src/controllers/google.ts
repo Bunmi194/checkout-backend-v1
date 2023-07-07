@@ -12,7 +12,6 @@ export const createUserOrLogin = async (profile: any) => {
       return "Please provide a valid email address";
     }
     const userExist = await userExists(email);
-    console.log("userExists: ", userExist);
     if (!userExist) {
       //register user
       const newUser = {

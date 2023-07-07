@@ -2,7 +2,6 @@ import speakeasy from "speakeasy";
 
 const secret = speakeasy.generateSecret({ length: 20 });
 const secretKey = secret.base32;
-// console.log(secretKey, secretKey);
 
 export const generateOTP = () => {
   const timestamp = Math.floor(Date.now() / 1000);
@@ -20,7 +19,6 @@ export const generateOTP = () => {
   };
 };
 
-// console.log('generateOTP: ', generateOTP());
 
 export const verifyOTP = (token: string, newSecretKey: string) => {
   const val = speakeasy.totp.verify({
@@ -29,7 +27,6 @@ export const verifyOTP = (token: string, newSecretKey: string) => {
     token: token,
     step: 600,
   });
-  console.log("val: ", val);
   return val;
 };
 

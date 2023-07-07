@@ -6,9 +6,9 @@ require("dotenv").config();
 
 const token =
   process.env.FLUTTERWAVE_API_SECRET_KEY_TEST ||
-  "FLWSECK_TEST-25f9d923e1d66d20670c2846f88e4cdb-X";
-const publicKey = "FLWPUBK_TEST-61f4488e423858da2fe2f35dae6010cf-X";
-const encryptionKey: string = "FLWSECK_TESTe843f37d9496";
+  "";
+const publicKey = process.env.FLUTTERWAVE_PUBLIC_KEY || "";
+const encryptionKey: string = process.env.FLUTTERWAVE_ENCRYPTION_KEY || "";
 
 export const initializePaymentFlutterwave = (
   formData: any,
@@ -77,7 +77,6 @@ export const encrypt = (payload: any) => {
 
 //     return flw.Charge.card(payload)
 //         .then((response:any) => {
-//             console.log("response: ", response);
 //             return response;
 //         }
 //         );
@@ -97,7 +96,6 @@ export const payWithUSSD = (payload: any, callback: Function) => {
 const verify = async () => {
   const transactionId = "4369355";
   const result = await flw.Transaction.verify({ id: transactionId });
-  console.log("result: " + JSON.stringify(result));
 };
 
 verify();

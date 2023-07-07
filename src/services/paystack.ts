@@ -4,13 +4,12 @@ require("dotenv").config();
 
 const token =
   process.env.PAYSTACK_API_SECRET_KEY_TEST ||
-  "sk_test_1c6935580e77aee5f31ad70219030a3ea7dd09ab";
+  "";
 
 export const initializePaymentPaystack = (
   formData: any,
   callback: Function
 ) => {
-  // console.log("formData: ", formData._previousDataValues);
   const options = {
     url: "https://api.paystack.co/transaction/initialize",
     headers: {
