@@ -1,6 +1,6 @@
 # Checkout Backend V1
 
-This branch contains the source code for Checkout Backend. Checkout is a fintech web application built with TypeScript, PostgreSQL for data persistence and ExpressJS. You can interact with some of my other projects at `https://bunmioladipupo-edf1263ld-bunmi194.vercel.app/`.
+This branch contains the source code for Checkout Backend. Checkout is a fintech web application built with TypeScript, PostgreSQL for data persistence and ExpressJS. You can interact with some of my other projects on my [Portfolio](https://bunmioladipupo-edf1263ld-bunmi194.vercel.app/).
 
 ## Dependencies
 
@@ -12,9 +12,10 @@ Please note that all dependencies used to build and deploy this project are free
 
 ## Live preview
 
-This project is available live at `https://checkout-frontend-three.vercel.app/`. Feel free to interact with the live preview and contact me at `bunmidavids194@gmail.com` should there be any comments or suggestions for improvements.
+This project is available live at [Checkout](https://checkout-frontend-three.vercel.app/). Feel free to interact with the live preview and contact me at `bunmidavids194@gmail.com` should there be any comments or suggestions for improvements.
 
 Although it is advised that you sign up on the platform for full access (typically takes less than a minute to sign up with a google account), you can use the following details for fast access to the dashboard without having to sign up. 
+
 
 **Caveat**
 Please note that the details are for testing purposes only and there is a posibility that someone somewhere might be using the same details as you simultaneously which could distort your user experience.
@@ -47,11 +48,11 @@ Amongst other security measures put in place for secure transactions, I implemen
 
 ## Frontend
 
-You can find the link to the frontend repository at `https://github.com/Bunmi194/checkoutFrontend`.
+You can find the link to the frontend repository at [Checkout-Frontend](https://github.com/Bunmi194/checkoutFrontend).
 
 ## Closing
 
-Thank you for stopping by. Checkout the live project at `https://checkout-frontend-three.vercel.app/` and pay me a visit at `https://bunmioladipupo-edf1263ld-bunmi194.vercel.app/`
+Thank you for stopping by. Checkout the live project at [Checkout](https://checkout-frontend-three.vercel.app/) and pay me a visit at [my portfolio](https://bunmioladipupo-edf1263ld-bunmi194.vercel.app/)
 
 ```bash
 checkout$ exit
